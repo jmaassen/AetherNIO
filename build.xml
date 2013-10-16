@@ -1,0 +1,117 @@
+<project name="AetherNIO" default="build" basedir=".">
+    <description>
+        Build file for NIO implementation of Aether API.
+    </description>
+
+    <target name="build" description="Build NIO implementation of Aether" depends="clean,compile,javadoc" />
+
+    <property name="version-tag" value="1.0" />
+
+    <property name="impl-name" value="NIO" />
+
+    <!-- Names for generated directories. -->
+    <property name="javadoc" value="doc/javadoc" />
+    <property name="tmp" value="tmp" />
+    <property name="dist" value="dist" />
+
+    <!-- The source files that are part of the implementation. -->
+    <property name="files" value="nl/esciencecenter/aether/impl/nio/**/*.class" />
+
+    <property name="jar" value="${dist}/Aether${impl-name}-${version-tag}.jar" />
+    <property name="sources" value="${dist}/Aether$impl-name}-src-${version-tag}.zip" />
+
+    <property name="build.sysclasspath" value="ignore"/>
+
+    <!-- import environment properties -->
+    <property environment="env" />
+
+    <path id="external.jars">
+        <fileset dir="lib">
+            <include name="*.jar" />
+        </fileset>
+    </path>
+
+    <path id="default.classpath">
+        <fileset dir="lib">
+            <include name="*.jar" />
+        </fileset>
+        <pathelement path="tmp" />
+    </path>
+
+    <!-- Copy external libraries to lib directory -->
+    <target name="copy-external">
+        <mkdir dir="${dist}" />
+        <!-- Other -->
+        <copy todir="${dist}">
+            <fileset dir="lib" includes="*.jar"/>
+        </copy>
+    </target>
+
+    <!-- Compile Aether implementation -->
+    <target name="compile" depends="copy-external">
+
+ 	<!-- Create the build directory structure used by util -->
+        <delete dir="${tmp}" />
+        <mkdir dir="${tmp}" />
+        <mkdir dir="${dist}" />
+
+        <!-- Compile the java code from src into tmp -->
+        <javac srcdir="src" destdir="tmp" debug="on" classpathref="external.jars">
+            <compilerarg value="-Xlint:unchecked" />
+        </javac>
+
+        <checksum totalproperty="nio.checksum">
+            <fileset dir="tmp" includes="${files}" />
+        </checksum>
+
+        <jar destfile="${jar}">
+            <fileset dir="tmp" includes="${files}" />
+            <metainf dir="." includes="LICENSE" />
+            <manifest>
+                <attribute name="Ibis-Starter-Class" value="nl.esciencecenter.aether.impl.nio.NioIbisStarter" />
+                <attribute name="Ibis-IPL-Version" value="${version}" />
+                <attribute name="Ibis-Implementation-Version" value="${nio.checksum}" />
+                <attribute name="Ibis-NickName" value="nio" />
+            </manifest>
+        </jar>
+
+        <!-- Backup manifest. Used if the jar file manifests cannot be loaded
+             for some reason (e.g. on android) -->
+        <echo file="tmp/nl/esciencecenter/aether/IPL_MANIFEST">
+            support.version=${support.checksum}
+            implementation.version=${implementation.checksum}
+
+            #nio
+            nio.starter.class=nl.esciencecenter.aether.impl.nio.NioIbisStarter
+            nio.ipl.version=${version}
+            nio.version=${nio.checksum}
+        </echo>
+
+        <!-- Add manifest property file to ipl jar -->
+        <jar destfile="${jar}" update="true">
+            <fileset dir="tmp" includes="nl/esciencecenter/aether/IPL_MANIFEST" />
+        </jar>
+
+        <delete dir="${tmp}" />
+    </target>
+
+    <!-- Clean up everything except the rewritten classlibs -->
+    <target name="clean" description="Clean up">
+        <delete dir="${tmp}" />
+        <delete dir="${dist}" />
+        <delete dir="${javadoc}" />
+    </target>
+
+    <target name="javadoc" description="Create javadocs" depends="compile">
+        <!-- Create the javadoc directory -->
+        <delete dir="${javadoc}" />
+        <mkdir dir="${javadoc}" />
+        <javadoc destdir="${javadoc}" access="public" sourcepath="src" windowtitle="AetherNIO Documentation" packagenames="nl.esciencecenter.aether.impl.nio" classpathref="default.classpath" doctitle="AetherTCP Documentation" bottom="Netherlands eScience Center">
+	    <link href="http://download.oracle.com/javase/1.7.0/docs/api/" />
+        </javadoc>
+    </target>
+
+    <target name="docs" description="Create manuals">
+        <ant dir="docs" inheritAll="false" />
+    </target>
+</project>
